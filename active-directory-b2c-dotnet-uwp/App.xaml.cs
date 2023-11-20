@@ -102,7 +102,7 @@ namespace active_directory_b2c_dotnet_uwp
 
         public static string[] ApiScopes = { "https://aaomb2cadt.onmicrosoft.com/license-api/Licenses.Read" };
         public static string QueryLicensesApiEndpoint = "https://licenses.acmeaom.com/v1/licenses";
-        public static string RegisterLicensesApiEndpoint = "https://installs.acmeaom.com/microsoft/v1/installs";
+        public static string RegisterInstallApiEndpoint = "https://installs.acmeaom.com/microsoft/v1/installs";
         // This key is for the example only and will be deleted once the system is in production.
         public static string RegisterLicensesKey = "DGx29PyU8iCwxTNCHmVw9s16oWtoO8yTN6Scsm7RXbg0AzFuEO94Vw==";
 

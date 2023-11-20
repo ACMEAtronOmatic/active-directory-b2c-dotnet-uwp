@@ -2,7 +2,7 @@
 
 namespace active_directory_b2c_dotnet_uwp
 {
-    public class LicenseRegistration
+    public class InstallRegistration
     {
         [JsonPropertyName("vid")]
         public string VendorId { get; set; }
