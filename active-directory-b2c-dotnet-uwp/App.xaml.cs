@@ -24,6 +24,7 @@ namespace active_directory_b2c_dotnet_uwp
 
             PublicClientApp = PublicClientApplicationBuilder.Create(ClientId)
                 .WithB2CAuthority(Authority)
+                .WithRedirectUri($"msal{ClientId}://auth")
                 .Build();
 
         }
@@ -93,16 +94,20 @@ namespace active_directory_b2c_dotnet_uwp
             deferral.Complete();
         }
 
-        private static string Tenant = "fabrikamb2c.onmicrosoft.com";
-        private static string ClientId = "841e1190-d73a-450c-9d68-f5cf16b78e81";
-        public static string PolicySignUpSignIn = "b2c_1_susi";
-        public static string PolicyEditProfile = "b2c_1_edit_profile";
-        public static string PolicyResetPassword = "b2c_1_reset";
+        private static string Tenant = "5699f700-a1e0-4be0-8d9e-74815d336e41";
+        private static string ClientId = "721364af-3bbb-4889-94ab-49c447f0b9b4";
+        public static string PolicySignUpSignIn = "B2C_1_Licenses_SignUpSignIn";
+        public static string PolicyEditProfile = "B2C_1_Licenses_EditProfile";
+        public static string PolicyResetPassword = "B2C_1_Licenses_PasswordReset";
 
-        public static string[] ApiScopes = { "https://fabrikamb2c.onmicrosoft.com/helloapi/demo.read" };
-        public static string ApiEndpoint = "https://fabrikamb2chello.azurewebsites.net/hello";
+        public static string[] ApiScopes = { "https://aaomb2cadt.onmicrosoft.com/license-api/Licenses.Read" };
+        public static string QueryLicensesApiEndpoint = "https://licenses.acmeaom.com/v1/licenses";
+        public static string RegisterLicensesApiEndpoint = "https://installs.acmeaom.com/microsoft/v1/installs";
+        // This key is for the example only and will be deleted once the system is in production.
+        public static string RegisterLicensesKey = "DGx29PyU8iCwxTNCHmVw9s16oWtoO8yTN6Scsm7RXbg0AzFuEO94Vw==";
 
-        private static string BaseAuthority = "https://fabrikamb2c.b2clogin.com/tfp/{tenant}/{policy}/";
+
+        private static string BaseAuthority = "https://aaomb2cadt.b2clogin.com/tfp/{tenant}/{policy}/";
         public static string Authority = BaseAuthority.Replace("{tenant}", Tenant).Replace("{policy}", PolicySignUpSignIn);
         public static string AuthorityEditProfile = BaseAuthority.Replace("{tenant}", Tenant).Replace("{policy}", PolicyEditProfile);
         public static string AuthorityResetPassword = BaseAuthority.Replace("{tenant}", Tenant).Replace("{policy}", PolicyResetPassword);

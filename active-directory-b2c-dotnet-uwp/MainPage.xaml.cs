@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
 using Windows.UI.Xaml;
@@ -78,44 +80,47 @@ namespace active_directory_b2c_dotnet_uwp
             }
         }
 
-        private async void CallApiButton_Click(object sender, RoutedEventArgs e)
+        private async void CallQueryLicensesApiButton_Click(object sender, RoutedEventArgs e)
         {
-            AuthenticationResult authResult = null;
-            IEnumerable<IAccount> accounts = await App.PublicClientApp.GetAccountsAsync();
-            try
-            {
-
-                authResult = await App.PublicClientApp.AcquireTokenSilent(App.ApiScopes, GetAccountByPolicy(accounts, App.PolicySignUpSignIn))
-                    .ExecuteAsync();
-            }
-            catch (MsalUiRequiredException ex)
-            {
-                // A MsalUiRequiredException happened on AcquireTokenSilentAsync. This indicates you need to call AcquireTokenAsync to acquire a token
-                Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
-
-                try
-                {
-                    authResult = await App.PublicClientApp.AcquireTokenInteractive(App.ApiScopes)
-                        .WithAccount(GetAccountByPolicy(accounts, App.PolicySignUpSignIn))
-                        .ExecuteAsync();
-                }
-                catch (MsalException msalex)
-                {
-                    ResultText.Text = $"Error Acquiring Token:{Environment.NewLine}{msalex}";
-                }
-            }
-            catch (Exception ex)
-            {
-                ResultText.Text = $"Error Acquiring Token Silently:{Environment.NewLine}{ex}";
-                return;
-            }
-
+            var authResult = await GetPrincipal();
+;            
             if (authResult != null)
             {
-                ResultText.Text = await GetHttpContentWithToken(App.ApiEndpoint, authResult.AccessToken);
+                ResultText.Text = await GetHttpContentWithToken(App.QueryLicensesApiEndpoint, authResult.AccessToken);
                 DisplayBasicTokenInfo(authResult);
             }
         }
+
+        private async void CallRegisterLicensesApiButton_Click(object sender, RoutedEventArgs e)
+        {
+            var authResult = await GetPrincipal();
+
+            if (authResult != null)
+            {
+                if (string.IsNullOrEmpty(authResult.AccessToken))
+                {
+                    ResultText.Text = "Access token is null (could be expired). Please do interactive log-in again.";
+                }
+                else
+                {
+                    // Same consideration as above for retry policy.
+
+                    // Refer to https://www.notion.so/acmeaom/Install-Registration-v1-140100ba29dd4330b38cf395b67585a9?pvs=4#318a6ff1dbfa45dcaa5ac87963dcb1ca
+                    // for the format of the request body and meaning of the properties.
+
+                    var registration = new LicenseRegistration
+                    {
+                        VendorId = "11111111111111111111111111111111",
+                        InstallId = Guid.NewGuid().ToString("N"),
+                        CryptographicId = GenerateCid(),
+                        ObjectId = authResult.UniqueId.Replace("-", "")
+                    };
+
+                    ResultText.Text = await PutHttpContent(App.RegisterLicensesApiEndpoint, registration);
+                }
+            }
+        }
+
 
         /// <summary>
         /// Perform an HTTP GET request to a URL using an HTTP Authorization header
@@ -140,6 +145,41 @@ namespace active_directory_b2c_dotnet_uwp
                 return ex.ToString();
             }
         }
+
+        /// <summary>
+        /// Perform an HTTP PUT request to a URL using an HTTP Authorization header
+        /// </summary>
+        /// <param name="url">The URL</param>
+        /// <param name="token">The token</param>
+        /// <returns>String containing the results of the GET operation</returns>
+        public async Task<string> PutHttpContent(string url, LicenseRegistration registration)
+        {
+            var httpClient = new HttpClient();
+            HttpResponseMessage response;
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Put, url);
+
+                request.Content = new StringContent(
+                    JsonSerializer.Serialize(registration),
+                    Encoding.UTF8,
+                    "application/json");
+
+                request.Headers.Add("x-functions-key", App.RegisterLicensesKey);
+
+                // Just for kicks. Add whatever makes sense.
+                request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MyRadar", "4.4.3.6"));
+
+                response = await httpClient.SendAsync(request);
+                var content = await response.Content.ReadAsStringAsync();
+                return content;
+            }
+            catch (Exception ex)
+            {
+                return ex.ToString();
+            }
+        }
+
 
         private async void SignOutButton_Click(object sender, RoutedEventArgs e)
         {
@@ -167,7 +207,8 @@ namespace active_directory_b2c_dotnet_uwp
         {
             if (signedIn)
             {
-                CallApiButton.Visibility = Visibility.Visible;
+                CallApi1Button.Visibility = Visibility.Visible;
+                CallApi2Button.Visibility = Visibility.Visible;
                 EditProfileButton.Visibility = Visibility.Visible;
                 SignOutButton.Visibility = Visibility.Visible;
 
@@ -178,7 +219,8 @@ namespace active_directory_b2c_dotnet_uwp
                 ResultText.Text = "";
                 TokenInfoText.Text = "";
 
-                CallApiButton.Visibility = Visibility.Collapsed;
+                CallApi1Button.Visibility = Visibility.Collapsed;
+                CallApi2Button.Visibility = Visibility.Collapsed;
                 EditProfileButton.Visibility = Visibility.Collapsed;
                 SignOutButton.Visibility = Visibility.Collapsed;
 
@@ -243,5 +285,52 @@ namespace active_directory_b2c_dotnet_uwp
             var decoded = Encoding.UTF8.GetString(byteArray, 0, byteArray.Count());
             return decoded;
         }
+
+        private string GenerateCid()
+        {
+            var randomNumberGenerator = RandomNumberGenerator.Create();
+            var randomBytes = new byte[50];
+            randomNumberGenerator.GetNonZeroBytes(randomBytes);
+
+            // Notion doc mentions Base62, but Base64 is okay too.
+            return Convert.ToBase64String(randomBytes);
+        }
+
+        private async Task<AuthenticationResult> GetPrincipal()
+        {
+            AuthenticationResult authResult = null;
+            IEnumerable<IAccount> accounts = await App.PublicClientApp.GetAccountsAsync();
+            try
+            {
+
+                authResult = await App.PublicClientApp.AcquireTokenSilent(App.ApiScopes, GetAccountByPolicy(accounts, App.PolicySignUpSignIn))
+                    .ExecuteAsync();
+            }
+            catch (MsalUiRequiredException ex)
+            {
+                // A MsalUiRequiredException happened on AcquireTokenSilentAsync.
+                // This indicates you need to call AcquireTokenAsync to acquire a token
+                Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
+
+                try
+                {
+                    authResult = await App.PublicClientApp.AcquireTokenInteractive(App.ApiScopes)
+                        .WithAccount(GetAccountByPolicy(accounts, App.PolicySignUpSignIn))
+                        .ExecuteAsync();
+                }
+                catch (MsalException msalex)
+                {
+                    ResultText.Text = $"Error Acquiring Token:{Environment.NewLine}{msalex}";
+                }
+            }
+            catch (Exception ex)
+            {
+                ResultText.Text = $"Error Acquiring Token Silently:{Environment.NewLine}{ex}";
+                return authResult;
+            }
+
+            return authResult;
+        }
+
     }
 }
