@@ -91,7 +91,7 @@ namespace active_directory_b2c_dotnet_uwp
             }
         }
 
-        private async void CallRegisterLicensesApiButton_Click(object sender, RoutedEventArgs e)
+        private async void CallRegisterInstallApiButton_Click(object sender, RoutedEventArgs e)
         {
             var authResult = await GetPrincipal();
 
@@ -108,7 +108,7 @@ namespace active_directory_b2c_dotnet_uwp
                     // Refer to https://www.notion.so/acmeaom/Install-Registration-v1-140100ba29dd4330b38cf395b67585a9?pvs=4#318a6ff1dbfa45dcaa5ac87963dcb1ca
                     // for the format of the request body and meaning of the properties.
 
-                    var registration = new LicenseRegistration
+                    var registration = new InstallRegistration
                     {
                         VendorId = "11111111111111111111111111111111",
                         InstallId = Guid.NewGuid().ToString("N"),
@@ -116,7 +116,7 @@ namespace active_directory_b2c_dotnet_uwp
                         ObjectId = authResult.UniqueId.Replace("-", "")
                     };
 
-                    ResultText.Text = await PutHttpContent(App.RegisterLicensesApiEndpoint, registration);
+                    ResultText.Text = await PutHttpContent(App.RegisterInstallApiEndpoint, registration);
                 }
             }
         }
@@ -152,7 +152,7 @@ namespace active_directory_b2c_dotnet_uwp
         /// <param name="url">The URL</param>
         /// <param name="token">The token</param>
         /// <returns>String containing the results of the GET operation</returns>
-        public async Task<string> PutHttpContent(string url, LicenseRegistration registration)
+        public async Task<string> PutHttpContent(string url, InstallRegistration registration)
         {
             var httpClient = new HttpClient();
             HttpResponseMessage response;
@@ -165,7 +165,7 @@ namespace active_directory_b2c_dotnet_uwp
                     Encoding.UTF8,
                     "application/json");
 
-                request.Headers.Add("x-functions-key", App.RegisterLicensesKey);
+                request.Headers.Add("x-functions-key", App.RegisterInstallApiKey);
 
                 // Just for kicks. Add whatever makes sense.
                 request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MyRadar", "4.4.3.6"));

@@ -104,7 +104,7 @@ namespace active_directory_b2c_dotnet_uwp
         public static string QueryLicensesApiEndpoint = "https://licenses.acmeaom.com/v1/licenses";
         public static string RegisterInstallApiEndpoint = "https://installs.acmeaom.com/microsoft/v1/installs";
         // This key is for the example only and will be deleted once the system is in production.
-        public static string RegisterLicensesKey = "DGx29PyU8iCwxTNCHmVw9s16oWtoO8yTN6Scsm7RXbg0AzFuEO94Vw==";
+        public static string RegisterInstallApiKey = "DGx29PyU8iCwxTNCHmVw9s16oWtoO8yTN6Scsm7RXbg0AzFuEO94Vw==";
 
 
         private static string BaseAuthority = "https://aaomb2cadt.b2clogin.com/tfp/{tenant}/{policy}/";
